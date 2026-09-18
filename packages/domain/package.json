@@ -1,0 +1,20 @@
+{
+  "name": "@open-ui/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@open-ui/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

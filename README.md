@@ -1,131 +1,79 @@
-# open-ui
+# Open UI
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Start, Self, and more.
+Open UI is an open-source, account-gated reference library for studying products, standalone
+screens, and ordered user flows across product versions.
 
-## Features
+The repository currently contains the production-oriented application scaffold. Product browsing,
+contribution, moderation, and publication slices will be implemented incrementally.
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Start** - SSR framework with TanStack Router
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Drizzle** - TypeScript-first ORM
-- **Cloudflare D1** - Database engine
-- **Authentication** - Clerk
-- **Turborepo** - Optimized monorepo build system
-- **Oxlint** - Oxlint + Oxfmt (linting & formatting)
+## Stack
 
-## Getting Started
+- TanStack Start and TanStack Query on Cloudflare Workers
+- Cloudflare D1 with Drizzle ORM
+- Clerk authentication
+- Tailwind CSS and shared shadcn/ui components
+- pnpm workspaces, Turborepo, TypeScript, Oxlint, and Oxfmt
+- Alchemy for Cloudflare infrastructure and deployments
 
-First, install the dependencies:
+The architectural decisions and deliberate deferrals are summarized in
+[`docs/architecture.md`](docs/architecture.md).
 
-```bash
-pnpm install
-```
+## Requirements
 
-## Database Setup
+- Node.js 24
+- pnpm 11.25.0 (the version pinned by `packageManager`)
+- A Clerk application for authenticated development
+- A Cloudflare account only when deploying
 
-This project uses Cloudflare D1 (SQLite) with Drizzle ORM.
-
-Runtime database access uses the Cloudflare `DB` binding from `packages/infra/alchemy.run.ts`. If a local `DATABASE_URL` is present, it is only for database tooling.
-
-Alchemy provisions the D1 database and applies migrations during `deploy`.
-
-1. Generate migration files:
+## Local development
 
 ```bash
-pnpm run db:generate
+pnpm install --frozen-lockfile
+cp apps/web/.env.example apps/web/.env
+pnpm dev
 ```
 
-## Clerk Authentication Setup
+Populate `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in `apps/web/.env`. Environment files
+are ignored; schemas are committed. The app runs at <http://localhost:3001>.
 
-- Follow the guide: [Clerk Quickstart](https://clerk.com/docs/tanstack-react-start/getting-started/quickstart)
-- Set `VITE_CLERK_PUBLISHABLE_KEY` in `apps/web/.env`
-- Set `CLERK_SECRET_KEY` in `apps/web/.env` for Clerk server middleware and server-side Clerk auth
-
-Then, run the development server:
+Useful commands:
 
 ```bash
-pnpm run dev
+pnpm check          # lint, formatting check, and type checking
+pnpm build          # production build
+pnpm format         # write formatting changes
+pnpm db:generate    # generate Drizzle migrations
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the fullstack application.
+## Repository layout
 
-## UI Customization
-
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
+```text
+apps/
+  web/       TanStack Start app, server functions, media route, and workflow entry point
+packages/
+  config/    shared TypeScript configuration
+  db/        Drizzle schema, migrations, and queries
+  domain/    entities, validation schemas, policies, and publication decisions
+  infra/     Cloudflare resources managed by Alchemy
+  ui/        shared components and design tokens
 ```
 
-Import shared components like this:
-
-```tsx
-import { Button } from "@open-ui/ui/components/button";
-```
-
-### Add app-specific blocks
-
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Environment Configuration
-
-Each app owns its environment schema in `.env.schema`. Varlock generates `src/env.ts` during installation; run `pnpm run env:generate` after changing a schema. Commit schemas, and keep secrets in ignored env files or your deployment platform.
-
-Import the generated `ENV` accessor in application code. Shared database and auth packages receive configuration or initialized clients from the application. See [Varlock's monorepo guide](https://varlock.dev/guides/monorepos/).
-
-For Cloudflare, Alchemy loads and validates deployment inputs with `varlock/auto-load` in its Node/Bun deployment process. Worker code reads native bindings; web clients use the framework's public env API through `src/env.public.ts` where needed. Alchemy supplies resource URLs and managed database credentials. In-Worker Varlock protections are deferred until an official Alchemy integration is available; see [the non-Wrangler deployment guidance](https://varlock.dev/integrations/cloudflare/#non-wrangler-deploy-tools-alchemy-sst-pulumi).
-
-Bun's automatic env loading is disabled in `bunfig.toml`; the framework integration or server bootstrap loads Varlock. Node deployments must include Varlock and its dependencies alongside the app schema.
-
-Run standalone Node/Bun tools that use Varlock from the owning app directory so they load that app's schema and env files. `env:generate` only generates TypeScript files; it does not initialize environment values in a subsequent command.
+Keep workflow and media code in `apps/web` until another deployable needs them. Production data,
+screenshots, secrets, and live Cloudflare bindings do not belong in this repository.
 
 ## Deployment
 
-### Alchemy
-
-- Target: web on Cloudflare
-- Configure provider accounts: `cd packages/infra && pnpm exec alchemy profile edit`
-- Dev: pnpm run dev
-- Deploy: pnpm run deploy
-- Destroy: pnpm run destroy
-
-`alchemy profile edit` stores the selected Axiom, Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
-
-Deploys are staged and default to a personal `dev_<username>` stage. For production, run the deploy with an explicit stage from `packages/infra`:
+Alchemy provisions the D1 database and deploys the web application to Cloudflare. Configure your
+local Cloudflare profile from `packages/infra`, then deploy with an explicit stage:
 
 ```bash
-cd packages/infra && pnpm exec alchemy deploy --stage production
+cd packages/infra
+pnpm exec alchemy profile edit
+pnpm exec alchemy deploy --stage production
 ```
 
-## Git Hooks and Formatting
+Preview and production credentials must use isolated Cloudflare, Clerk, and analytics resources.
 
-- Run checks: `pnpm run check`
+## License
 
-## Project Structure
-
-```
-open-ui/
-├── apps/
-│   └── web/         # Fullstack application (React + TanStack Start)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:generate`: Generate database client/types
-- `pnpm run check`: Run Oxlint and Oxfmt
+Apache-2.0. See [`LICENSE`](LICENSE).

@@ -200,6 +200,19 @@ importers:
         specifier: 'catalog:'
         version: 1.18.0
 
+  packages/domain:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@open-ui/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/infra:
     dependencies:
       zod:

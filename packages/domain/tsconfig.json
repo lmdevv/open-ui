@@ -1,0 +1,7 @@
+{
+  "extends": "@open-ui/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src"]
+}
